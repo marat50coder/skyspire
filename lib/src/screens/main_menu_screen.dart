@@ -70,20 +70,11 @@ class MainMenuScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 12),
                             _MenuButton(
-                              label: 'PRIVACY POLICY',
-                              onTap: () => _open(
-                                context,
-                                'Privacy Policy',
-                                'https://skyspirre.com/privacy-policy.html',
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            _MenuButton(
                               label: 'SUPPORT',
                               onTap: () => _open(
                                 context,
                                 'Support',
-                                'https://skyspirre.com/support.html',
+                                'https://skyiyspire.com/support',
                               ),
                             ),
                           ],
