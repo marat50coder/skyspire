@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="launch_sky">#3FA8E0</color>
+    <!-- Background colour of the launcher / splash adaptive icon. -->
+    <color name="launch_bg">#3FA8E0</color>
+</resources>

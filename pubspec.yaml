@@ -1,0 +1,35 @@
+name: skyspire
+description: "Skyspire - stack the tower, cash out before it crashes."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  webview_flutter: ^4.10.0
+  shared_preferences: ^2.3.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/Skyspire_gameplay_assets/
+    - assets/Skyspire_additional_assets/
+
+flutter_launcher_icons:
+  # Only the legacy pre-API-26 mipmaps are generated here. The adaptive icon
+  # in mipmap-anydpi-v26 is hand-written so it can share one <adaptive-icon>
+  # with the Android 12+ splash; leaving adaptive_icon_* out keeps this tool
+  # from overwriting that file on the next run.
+  android: true
+  ios: false
+  image_path: "assets/launcher/icon.png"
+  min_sdk_android: 23

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Identical to mipmap-anydpi-v26/ic_launcher.xml. The Android 12+ splash
+     only honours an AdaptiveIconDrawable here; a flat bitmap is silently
+     ignored and the system falls back to the launcher icon. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/launch_bg" />
+    <foreground>
+        <inset
+            android:drawable="@drawable/ic_launcher_art"
+            android:inset="17%" />
+    </foreground>
+</adaptive-icon>
