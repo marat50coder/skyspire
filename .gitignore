@@ -52,3 +52,8 @@ app.*.map.json
 
 # Release artifacts
 /dist/
+
+# Rust / Rinf native build artifacts
+/native/hub/target/
+/native/**/target/
+.rinf/

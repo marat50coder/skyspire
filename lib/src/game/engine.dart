@@ -253,6 +253,10 @@ class SkyEngine {
   int _lastSprite = -1;
   bool _cloudsSeeded = false;
 
+  /// Fired when a block settles on the tower. Argument is the landing
+  /// accuracy in 0..1 (1 = dead-centre). Consumed by the native scorer.
+  void Function(double accuracy)? onBlockLanded;
+
   /// Fired when a block settles on the tower.
   void Function()? onImpact;
 
@@ -621,6 +625,7 @@ class SkyEngine {
     );
 
     _spawnImpactSmoke(block);
+    onBlockLanded?.call(accuracy);
     onImpact?.call();
   }
 

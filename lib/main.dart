@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:rinf/rinf.dart';
 
+import 'src/bindings/bindings.dart';
 import 'src/screens/loading_screen.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Start the native scoring engine (Rust) before the UI comes up.
+  await initializeRust(assignRustSignal);
   // Hide the status and navigation bars: nothing but the game is on screen.
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   SystemChrome.setSystemUIOverlayStyle(

@@ -7,8 +7,10 @@ import '../data/wallet.dart';
 import '../ui/palette.dart';
 import '../ui/widgets.dart';
 import 'engine.dart';
+import 'rust_bridge.dart';
 import 'scene_painter.dart';
 import 'sprites.dart';
+import '../bindings/bindings.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({
@@ -36,6 +38,7 @@ class _GameScreenState extends State<GameScreen>
   );
   late final Ticker _ticker;
   final ValueNotifier<int> _frame = ValueNotifier<int>(0);
+  final RustScoring _rust = RustScoring();
 
   Duration _last = Duration.zero;
   String _uiKey = '';
@@ -50,14 +53,15 @@ class _GameScreenState extends State<GameScreen>
     _engine.reducedFx = widget.settings.reducedFx;
     widget.settings.addListener(_syncFromSettings);
     _engine.onImpact = widget.settings.hapticLight;
+    _engine.onBlockLanded = (double accuracy) => _rust.blockLanded(accuracy);
     _engine.onCrash = () {
       widget.settings.hapticHeavy();
       _showBanner(const _Banner('OOPS!', null, false));
     };
     _engine.onCashout = (double payout) {
-      widget.wallet.give(payout);
+      // Banking is handled in [_handleCashout] using the authoritative
+      // payout returned by the native scorer; here we only add feedback.
       widget.settings.hapticMedium();
-      _showBanner(_Banner('YOU WIN', '${formatCoins(payout)} COINS', true));
     };
     _ticker = createTicker(_onTick)..start();
   }
@@ -138,9 +142,23 @@ class _GameScreenState extends State<GameScreen>
       w.take(w.bet);
       _engine.bet = w.bet;
       _banner = null;
+      _rust.resetRound(w.bet);
     }
     _engine.drop();
     setState(() {});
+  }
+
+  Future<void> _handleCashout() async {
+    if (!_engine.canCashout) return;
+    final int bet = _engine.bet;
+    final double localEstimate = _engine.payout;
+    _engine.cashout();
+    setState(() {});
+    final RoundReport? report = await _rust.cashOut(bet);
+    if (!mounted) return;
+    final double amount = report?.payout ?? localEstimate;
+    widget.wallet.give(amount);
+    _showBanner(_Banner('YOU WIN', '${formatCoins(amount)} COINS', true));
   }
 
   void _showNoFunds() {
@@ -252,10 +270,7 @@ class _GameScreenState extends State<GameScreen>
               engine: _engine,
               wallet: widget.wallet,
               onBuild: _onBuild,
-              onCashout: () {
-                _engine.cashout();
-                setState(() {});
-              },
+              onCashout: _handleCashout,
               onBetChanged: () => setState(() {}),
             ),
           ],
