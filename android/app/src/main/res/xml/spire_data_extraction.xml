@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Required on Android 12+ (API 31) when `android:allowBackup="false"` and
+    `android:dataExtractionRules` is set. We explicitly exclude the whole
+    SharedPreferences + flutter_secure_storage payload from both cloud and
+    device-to-device transfer so attribution data cannot leak across users.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref"/>
+        <exclude domain="database"/>
+        <exclude domain="file"/>
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref"/>
+        <exclude domain="database"/>
+        <exclude domain="file"/>
+    </device-transfer>
+</data-extraction-rules>

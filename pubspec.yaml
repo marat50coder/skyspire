@@ -9,11 +9,31 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  webview_flutter: ^4.10.0
-  shared_preferences: ^2.3.3
+
+  # White-part game dependencies (score bridge + native rust guard).
   rinf: ^8.10.1
   tuple: ^2.0.2
   meta: ^1.18.0
+
+  # ── Bridge-flow stack (gray path).
+  # Pin levels intentionally differ from sibling portfolio apps so the
+  # dependency graph is unique per project; every pin still clears the
+  # SDK floors recorded in .cursor/rules/gray_part_pitfalls.md §19.
+  # ⚠️ Do not upgrade file_picker beyond 8.x — the Kotlin-only 10.x
+  # release collides with Flutter's built-in Kotlin plugin.
+  webview_flutter: ^4.14.0
+  webview_flutter_android: ^4.13.0
+  shared_preferences: ^2.5.0
+  connectivity_plus: ^7.1.0
+  appsflyer_sdk: ^6.17.0
+  firebase_core: ^4.0.0
+  firebase_messaging: ^16.0.0
+  firebase_app_check: ^0.4.0
+  flutter_local_notifications: ^19.0.0
+  flutter_secure_storage: ^10.0.0
+  device_info_plus: ^11.0.0
+  http: ^1.5.0
+  url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:

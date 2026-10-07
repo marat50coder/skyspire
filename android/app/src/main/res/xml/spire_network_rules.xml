@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Cleartext is permitted globally because partner-side campaigns sometimes
+    ship HTTP push URLs (pitfalls §15). If we switched to httpsOnly we would
+    silently drop those links and the user would land on a blank screen.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </base-config>
+</network-security-config>
