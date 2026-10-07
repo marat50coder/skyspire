@@ -61,9 +61,8 @@ class SpirePillTap extends StatelessWidget {
                       ),
                     ]
                   : null,
-              border: const Border(
-                top: BorderSide(color: Color(0x80FFFFFF), width: 1),
-              ),
+              // No border — the thin white top highlight was reading as a
+              // double-outline against the gradient's own hairline.
             ),
             child: Center(
               child: Text(

@@ -55,7 +55,16 @@ class _UnreachableWallState extends State<UnreachableWall> {
 
   @override
   Widget build(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    final isLandscape = mq.orientation == Orientation.landscape;
     final retryExhausted = _retries >= kOfflineRetryCap;
+
+    // In landscape the screen is much wider than it is tall; a full-width
+    // pill looks like a bar across the display. Shrink it by 20% from each
+    // side so it occupies the center 60% of the available width.
+    final EdgeInsets pillPadding = isLandscape
+        ? EdgeInsets.symmetric(horizontal: mq.size.width * 0.2)
+        : EdgeInsets.zero;
 
     return Scaffold(
       backgroundColor: SpirePalette.abyssDeep,
@@ -108,16 +117,18 @@ class _UnreachableWallState extends State<UnreachableWall> {
                 ),
               ),
               const Spacer(flex: 4),
-              if (!retryExhausted)
-                SpirePillTap(
-                  label: _busy ? 'Checking…' : 'Retry',
-                  onPressed: _busy ? null : _retry,
-                )
-              else
-                SpirePillTap(
-                  label: 'Contact support',
-                  onPressed: _openSupport,
-                ),
+              Padding(
+                padding: pillPadding,
+                child: retryExhausted
+                    ? SpirePillTap(
+                        label: 'Contact support',
+                        onPressed: _openSupport,
+                      )
+                    : SpirePillTap(
+                        label: _busy ? 'Checking…' : 'Retry',
+                        onPressed: _busy ? null : _retry,
+                      ),
+              ),
             ],
           ),
         ),
