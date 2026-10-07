@@ -15,7 +15,6 @@
 import 'package:flutter/material.dart';
 
 import '../../shell/spire_buttons.dart';
-import '../../shell/spire_media.dart';
 import '../../shell/spire_theme.dart';
 import '../charts/bridge_manifest.dart';
 import '../pipeline/notice_stream.dart';
@@ -74,34 +73,72 @@ class _OptInCurtainState extends State<OptInCurtain> {
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
     final isLandscape = mq.orientation == Orientation.landscape;
-    final bg = isLandscape
-        ? SpireMedia.landscapeNotice
-        : SpireMedia.portraitNotice;
 
     return Scaffold(
       backgroundColor: SpirePalette.abyssDeep,
-      body: Stack(
-        fit: StackFit.expand,
-        children: <Widget>[
-          Image.asset(bg, fit: BoxFit.cover),
-          SafeArea(
-            minimum: const EdgeInsets.fromLTRB(24, 24, 24, 36),
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: isLandscape ? _buildLandscape() : _buildPortrait(),
-            ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: <Color>[
+              SpirePalette.abyssSoft,
+              SpirePalette.abyss,
+              SpirePalette.abyssDeep,
+            ],
+            stops: <double>[0, 0.55, 1],
           ),
-        ],
+        ),
+        child: SafeArea(
+          minimum: const EdgeInsets.fromLTRB(24, 24, 24, 36),
+          child: isLandscape ? _buildLandscape() : _buildPortrait(),
+        ),
       ),
     );
   }
 
-  // Portrait: two full-width stacked pills (matches the vertical notice art).
-  Widget _buildPortrait() {
+  // Headline block requested verbatim by the user. UPPERCASE lines are the
+  // call-to-action; the trailing two lines are the softer sub-copy.
+  Widget _buildHeadline({TextAlign align = TextAlign.center}) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
+        Text(
+          'ALLOW\nNOTIFICATION\nABOUT BONUSES\nAND PROMOS',
+          textAlign: align,
+          style: TextStyle(
+            color: SpirePalette.mist,
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.1,
+            height: 1.15,
+          ),
+        ),
+        const SizedBox(height: 18),
+        Text(
+          'Stay tuned for special\noffers nad rewards',
+          textAlign: align,
+          style: TextStyle(
+            color: SpirePalette.mistDim,
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0.3,
+            height: 1.4,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Portrait: headline up top, two full-width stacked pills down bottom.
+  Widget _buildPortrait() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        const SizedBox(height: 16),
+        _buildHeadline(),
+        const Spacer(),
         SpirePillTap(
           label: 'Accept',
           onPressed: _busy ? null : _accept,
@@ -115,28 +152,47 @@ class _OptInCurtainState extends State<OptInCurtain> {
     );
   }
 
-  // Landscape: two small pills side-by-side on the same baseline, roughly a
-  // quarter the width of a portrait pill (per the user's "в 4 раза меньше"
-  // request against the horizontal notice art).
+  // Landscape: headline on the left half, two small pills on the right half
+  // on one baseline. Pills remain ~1/4 of the portrait width per the user's
+  // earlier "в 4 раза меньше" request against the horizontal art.
   Widget _buildLandscape() {
     const double kLandscapePillWidth = 170;
     const double kLandscapePillHeight = 44;
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
-        SpirePillTap(
-          label: 'Accept',
-          width: kLandscapePillWidth,
-          height: kLandscapePillHeight,
-          onPressed: _busy ? null : _accept,
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: _buildHeadline(align: TextAlign.left),
+          ),
         ),
-        const SizedBox(width: 20),
-        SpirePillTap(
-          label: 'Skip',
-          width: kLandscapePillWidth,
-          height: kLandscapePillHeight,
-          onPressed: _busy ? null : _skip,
+        const SizedBox(width: 24),
+        Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: <Widget>[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: <Widget>[
+                  SpirePillTap(
+                    label: 'Accept',
+                    width: kLandscapePillWidth,
+                    height: kLandscapePillHeight,
+                    onPressed: _busy ? null : _accept,
+                  ),
+                  const SizedBox(width: 20),
+                  SpirePillTap(
+                    label: 'Skip',
+                    width: kLandscapePillWidth,
+                    height: kLandscapePillHeight,
+                    onPressed: _busy ? null : _skip,
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ],
     );
