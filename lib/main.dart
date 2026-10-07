@@ -62,7 +62,7 @@ Future<void> main() async {
   await Future.wait<void>(<Future<void>>[
     SignalVault.prime(),
     GadgetFingerprint.prime(kApplicationId),
-    NoticeStream.instance.primeToken(),
+    NoticeStream.instance.primeToken(applicationId: kApplicationId),
   ]);
 
   // Rust engine comes up last so its FFI port is open before LoadingScreen

@@ -42,7 +42,7 @@ class _OptInCurtainState extends State<OptInCurtain> {
     if (_busy) return;
     setState(() => _busy = true);
     try {
-      await NoticeStream.instance.prime();
+      await NoticeStream.instance.prime(applicationId: widget.applicationId);
       await SignalVault.markPermissionAccepted(true);
     } catch (_) {
       await SignalVault.markPermissionDeniedByOs(true);

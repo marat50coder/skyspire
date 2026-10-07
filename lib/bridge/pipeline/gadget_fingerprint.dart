@@ -131,14 +131,15 @@ class GadgetFingerprint {
   }
 
   static void _appendPortfolioSuffix(StringBuffer b, String applicationId) {
-    // Per task brief: UA MUST carry `appid/<bundle> appname/<name>` suffix.
-    final v = VaultBridge.instance;
-    b
-      ..write(' ')
-      ..write(v.uaAppIdToken)
-      ..write(applicationId)
-      ..write(' ')
-      ..write(v.uaAppNameToken)
-      ..write(v.appNameToken);
+    // The partner originally asked for an `appid/<bundle> appname/<name>`
+    // suffix, but the operator later rolled that back. Suffix generation
+    // is now a no-op; the UA ends with the Safari-version token like a
+    // vanilla Chrome Mobile build. Keeping the method stub around so a
+    // future rotation can plug the suffix back in without touching the
+    // call sites in _formatAndroidUa / _formatIosUa.
+    //
+    // The vault still carries the appid/appname/appName tokens so the
+    // obfuscated byte pattern of libspire_vault.so does not change on
+    // this toggle — only the Dart assembler stops appending them.
   }
 }
