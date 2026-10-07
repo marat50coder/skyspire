@@ -27,7 +27,7 @@ class OriginBeacon {
   final BridgeCourier courier;
 
   AppsflyerSdk? _sdk;
-  Map<String, dynamic> _attribution = <String, dynamic>{};
+  final Map<String, dynamic> _attribution = <String, dynamic>{};
   String? _afId;
   final Completer<void> _firstPulse = Completer<void>();
 
@@ -61,10 +61,15 @@ class OriginBeacon {
         _log('cb=install payload.size=${_sizeOf(data)} '
             'af_status=${_pick(data, 'af_status')} '
             'media_source=${_pick(data, 'media_source')}');
-        _attribution = _flatten(data);
+        // Merge rather than replace: if GCD rescue or onAppOpenAttribution
+        // already populated `_attribution`, we want to keep those fields
+        // AND overlay the real conversion payload on top. Replacement
+        // would wipe the GCD partial response.
+        _attribution.addAll(_flatten(data));
         try {
           _afId = _attribution['appsflyer_id']?.toString() ??
-              _attribution['app_id']?.toString();
+              _attribution['app_id']?.toString() ??
+              _afId;
         } catch (_) {}
         if (!_firstPulse.isCompleted) _firstPulse.complete();
       });
@@ -124,12 +129,18 @@ class OriginBeacon {
   }
 
   /// Keep polling for new attribution bytes beyond the initial budget. Used
-  /// by BridgeConductor when the first verdict came back empty — gives the
-  /// SDK a second chance to deliver the payload before giving up.
+  /// by BridgeConductor when the first verdict was accepted without a real
+  /// af_status — gives the SDK a second chance to deliver its conversion
+  /// payload before we accept the HomeBerth as final.
+  ///
+  /// Polls on af_status specifically (not on map emptiness) because the
+  /// GCD rescue path can land ~14 non-attribution keys that would trip a
+  /// naive `isNotEmpty` check.
   Future<Map<String, dynamic>> awaitLateArrival(Duration extra) async {
     final deadline = DateTime.now().add(extra);
     while (DateTime.now().isBefore(deadline)) {
-      if (_attribution.isNotEmpty) break;
+      final v = _attribution['af_status']?.toString().trim() ?? '';
+      if (v.isNotEmpty) break;
       await Future<void>.delayed(const Duration(milliseconds: 200));
     }
     return Map<String, dynamic>.unmodifiable(_attribution);
@@ -148,7 +159,16 @@ class OriginBeacon {
       _log('gcdRescue status=${res.statusCode} bodyLen=${res.body.length}');
       if (res.statusCode == 200 && res.body.isNotEmpty) {
         final decoded = jsonDecode(res.body);
-        if (decoded is Map) _attribution.addAll(_flatten(decoded));
+        if (decoded is Map) {
+          // Merge GCD data WITHOUT overwriting fields the SDK may have
+          // already delivered. Rescue is a fallback — the SDK's own
+          // conversion callback is always the preferred source of truth
+          // for af_status / media_source / campaign.
+          final flat = _flatten(decoded);
+          flat.forEach((k, v) {
+            _attribution.putIfAbsent(k, () => v);
+          });
+        }
       }
     } catch (e) {
       _log('gcdRescue exception: $e');

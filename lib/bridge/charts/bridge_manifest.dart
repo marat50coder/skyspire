@@ -47,18 +47,21 @@ const Duration kReturningInstallAwait = Duration(seconds: 8);
 /// parser can hand us the destination.
 const Duration kDeepLinkAwait = Duration(seconds: 5);
 
-/// AppsFlyer GCD organic rescue window. Field data on this project showed
-/// the cached-conversion callback (`iscache: true`) landing anywhere between
-/// 10 s and 20 s after `install_time` on a fresh install, so we hold the
-/// splash through the full tail. Repeat-boots short-circuit via the trail
-/// cache and never block here.
-const Duration kOrganicRescueDelay = Duration(seconds: 25);
+/// AppsFlyer first-pulse window. Field data on this project showed the
+/// cached-conversion callback (`iscache: true`) landing 25–55 s after
+/// `install_time` on fresh re-installs when the AF partner marks the
+/// install as `re-attribution`. The splash is longer than it would be on a
+/// typical campaign, but a shorter window causes `af_status` to arrive
+/// after the verdict call has already left — and the user ends up in the
+/// native shell despite a paid click. Repeat-boots short-circuit via the
+/// trail cache and never block on this.
+const Duration kOrganicRescueDelay = Duration(seconds: 45);
 
-/// Secondary verdict window: if the first verdict came back empty but the
-/// SDK then fires its callback a moment later, give it this long to deliver
-/// usable attribution and re-ask the config endpoint before accepting the
-/// HomeBerth as final.
-const Duration kLateAttributionWindow = Duration(seconds: 10);
+/// Secondary verdict window: if the first verdict came back without a
+/// usable `af_status`, give the SDK this long to finally deliver it and
+/// re-ask the config endpoint. Combined cap: ~65 s on the worst-case
+/// first install.
+const Duration kLateAttributionWindow = Duration(seconds: 20);
 
 /// Reach probe timeout. 7s accommodates captive-portal redirects without
 /// permanently painting the UnreachableWall.

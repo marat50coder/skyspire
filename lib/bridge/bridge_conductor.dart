@@ -90,23 +90,32 @@ class BridgeConductor {
     final berth = await _askVerdict(attribution);
     _log('verdict.berth=$berth');
 
-    // Retry pass: a HomeBerth with empty attribution is almost always a
-    // timing miss — the AF SDK fired its callback just after we gave up.
-    // Give it `kLateAttributionWindow` more seconds and, if the SDK finally
-    // coughs up a payload, re-ask the endpoint before accepting HomeBerth.
+    // Retry pass: a HomeBerth without a real af_status is almost always a
+    // timing miss — the GCD rescue filled `_attribution` with 14-ish non-
+    // attribution keys OR the AF SDK fires its real callback a moment
+    // later. Give it `kLateAttributionWindow` more seconds and re-ask the
+    // endpoint if a usable payload shows up.
+    //
+    // IMPORTANT: condition is "no af_status", NOT "attribution.isEmpty".
+    // The GCD-rescue path can populate `_attribution` with partial data
+    // that has no af_status/media_source — a size check would miss that.
     Berth finalBerth = berth;
     Map<String, dynamic> finalAttr = attribution;
-    if (berth is HomeBerth && attribution.isEmpty) {
+    final firstAfStatus =
+        (attribution['af_status']?.toString() ?? '').trim();
+    if (berth is HomeBerth && firstAfStatus.isEmpty) {
+      _log('retry pass: no af_status in first attribution — waiting for SDK');
       final late = await _origin.awaitLateArrival(kLateAttributionWindow);
-      if (late.isNotEmpty) {
+      final lateAfStatus = (late['af_status']?.toString() ?? '').trim();
+      if (lateAfStatus.isNotEmpty) {
         _log('late attribution arrived: size=${late.length} '
-            'af_status=${late['af_status']} '
+            'af_status=$lateAfStatus '
             'media_source=${late['media_source']}');
         finalAttr = late;
         finalBerth = await _askVerdict(late);
         _log('verdict.berth(retry)=$finalBerth');
       } else {
-        _log('no late attribution after retry window');
+        _log('no usable af_status after retry window — accepting HomeBerth');
       }
     }
 
