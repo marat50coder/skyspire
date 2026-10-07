@@ -176,14 +176,50 @@ class OriginBeacon {
     };
   }
 
+  /// Recursively lift wrapper maps so attribution fields are addressable at
+  /// the top level. The appsflyer_sdk Flutter plugin ships the real payload
+  /// nested one or two levels deep inside envelopes like
+  ///   { status: "success", payload: { af_status: ..., media_source: ... } }
+  ///   { status: "success", data: "`<json-string>`" }
+  ///   { conversion_data: { ... } }
+  /// A plain shallow copy left `af_status` et al. buried inside `payload`
+  /// and the verdict call went out empty.
   Map<String, dynamic> _flatten(dynamic raw) {
     final out = <String, dynamic>{};
-    if (raw is Map) {
-      raw.forEach((k, v) {
-        out[k.toString()] = v;
-      });
-    }
+    _flattenInto(raw, out);
     return out;
+  }
+
+  void _flattenInto(dynamic raw, Map<String, dynamic> sink) {
+    if (raw is String) {
+      // Native side sometimes JSON-encodes the payload into a string
+      // (`args.put("data", data.toString())` on Android). Try to decode.
+      final trimmed = raw.trim();
+      if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+        try {
+          final decoded = jsonDecode(trimmed);
+          _flattenInto(decoded, sink);
+          return;
+        } catch (_) {
+          // not JSON — ignore
+        }
+      }
+      return;
+    }
+    if (raw is! Map) return;
+    raw.forEach((k, v) {
+      final key = k.toString();
+      if (v is Map) {
+        // Lift nested envelopes (payload/data/conversion_data wrappers).
+        _flattenInto(v, sink);
+      } else if (v is String &&
+          v.length > 2 &&
+          v.trimLeft().startsWith('{')) {
+        _flattenInto(v, sink);
+      } else {
+        sink[key] = v;
+      }
+    });
   }
 
   int _sizeOf(dynamic data) {
@@ -194,7 +230,8 @@ class OriginBeacon {
 
   String _pick(dynamic data, String key) {
     try {
-      if (data is Map) return (data[key]?.toString() ?? 'null');
+      final flat = _flatten(data);
+      return (flat[key]?.toString() ?? 'null');
     } catch (_) {}
     return 'null';
   }
