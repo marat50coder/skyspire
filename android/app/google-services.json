@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "386399334421",
+    "project_id": "skyspire-69a94",
+    "storage_bucket": "skyspire-69a94.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:386399334421:android:ecc517bbd6a335b1115e1c",
+        "android_client_info": {
+          "package_name": "com.skyspire.spiregame"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBtobPhWVVN5OHi12PB_Ip-kRbI-QR0q3Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

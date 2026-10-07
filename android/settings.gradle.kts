@@ -24,6 +24,10 @@ plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
     id("com.android.application") version "8.9.3" apply false
     id("org.jetbrains.kotlin.android") version "2.1.21" apply false
+    // Firebase config generator — reads android/app/google-services.json and
+    // produces the google_app_id / default_web_client_id resources that
+    // firebase_core looks up at runtime.
+    id("com.google.gms.google-services") version "4.4.2" apply false
 }
 
 include(":app")
