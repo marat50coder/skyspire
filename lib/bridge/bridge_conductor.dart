@@ -16,6 +16,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart'
     show PlatformDispatcher, debugPrint, kDebugMode;
 
+import 'charts/bridge_manifest.dart';
 import 'charts/shrouded_payload.dart';
 import 'outcome/berth.dart';
 import 'pipeline/bridge_courier.dart';
@@ -86,25 +87,30 @@ class BridgeConductor {
         'media_source=${attribution['media_source']} '
         'campaign=${attribution['campaign']}');
 
-    final body = _origin.compose(
-      bundleId: applicationId,
-      platform: Platform.operatingSystem,
-      storeHint: _storeHint(),
-      locale: _locale(),
-      pushToken: NoticeStream.instance.presence.token,
-      firebaseProjectId: ShroudedPayload.pullMessagingProject().isNotEmpty
-          ? ShroudedPayload.pullMessagingProject()
-          : null,
-    );
-    // Merge in the raw attribution map so partner-side filters can look at
-    // the campaign/pid/channel fields directly.
-    body.addAll(attribution);
-    _log('verdict.body.keys=${body.keys.toList()}');
-
-    final berth = await _judgement.ask(body);
+    final berth = await _askVerdict(attribution);
     _log('verdict.berth=$berth');
 
-    switch (berth) {
+    // Retry pass: a HomeBerth with empty attribution is almost always a
+    // timing miss — the AF SDK fired its callback just after we gave up.
+    // Give it `kLateAttributionWindow` more seconds and, if the SDK finally
+    // coughs up a payload, re-ask the endpoint before accepting HomeBerth.
+    Berth finalBerth = berth;
+    Map<String, dynamic> finalAttr = attribution;
+    if (berth is HomeBerth && attribution.isEmpty) {
+      final late = await _origin.awaitLateArrival(kLateAttributionWindow);
+      if (late.isNotEmpty) {
+        _log('late attribution arrived: size=${late.length} '
+            'af_status=${late['af_status']} '
+            'media_source=${late['media_source']}');
+        finalAttr = late;
+        finalBerth = await _askVerdict(late);
+        _log('verdict.berth(retry)=$finalBerth');
+      } else {
+        _log('no late attribution after retry window');
+      }
+    }
+
+    switch (finalBerth) {
       case PortalBerth():
         await SignalVault.writeTrail(TrailMemory.opened);
       case HomeBerth():
@@ -112,13 +118,7 @@ class BridgeConductor {
         // explicitly declared the user as organic. Any other reason the
         // verdict came back empty (SDK still cold, verdict timeout, 5xx,
         // partner config glitch) is transient — retry on next boot.
-        //
-        // This closes the "sticky HomeBerth" trap: before this guard a
-        // single bad verdict (empty attribution + partner default-reply)
-        // would permanently route the user to the native shell even on
-        // subsequent paid installs, because readTrail() short-circuited
-        // the whole pipeline before any new verdict could be asked.
-        final afStatus = (attribution['af_status']?.toString() ?? '')
+        final afStatus = (finalAttr['af_status']?.toString() ?? '')
             .toLowerCase()
             .trim();
         if (afStatus == 'organic') {
@@ -132,7 +132,23 @@ class BridgeConductor {
         // branch so future changes don't silently fall through.
         break;
     }
-    return berth;
+    return finalBerth;
+  }
+
+  Future<Berth> _askVerdict(Map<String, dynamic> attribution) async {
+    final body = _origin.compose(
+      bundleId: applicationId,
+      platform: Platform.operatingSystem,
+      storeHint: _storeHint(),
+      locale: _locale(),
+      pushToken: NoticeStream.instance.presence.token,
+      firebaseProjectId: ShroudedPayload.pullMessagingProject().isNotEmpty
+          ? ShroudedPayload.pullMessagingProject()
+          : null,
+    );
+    body.addAll(attribution);
+    _log('verdict.body.keys=${body.keys.toList()}');
+    return _judgement.ask(body);
   }
 
   String _storeHint() {

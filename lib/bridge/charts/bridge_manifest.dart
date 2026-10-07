@@ -47,12 +47,18 @@ const Duration kReturningInstallAwait = Duration(seconds: 8);
 /// parser can hand us the destination.
 const Duration kDeepLinkAwait = Duration(seconds: 5);
 
-/// AppsFlyer GCD organic rescue window. If the SDK stays silent beyond this
-/// we fall back to the direct GCD endpoint. 12 s is the safe floor —
-/// real-world first-launch conversion callbacks commonly arrive 3–8 s after
-/// initSdk, with a long tail up to ~10 s on cold cellular. Dropping below
-/// 10 s causes paid installs to be mis-scored as organic by the partner.
-const Duration kOrganicRescueDelay = Duration(seconds: 12);
+/// AppsFlyer GCD organic rescue window. Field data on this project showed
+/// the cached-conversion callback (`iscache: true`) landing anywhere between
+/// 10 s and 20 s after `install_time` on a fresh install, so we hold the
+/// splash through the full tail. Repeat-boots short-circuit via the trail
+/// cache and never block here.
+const Duration kOrganicRescueDelay = Duration(seconds: 25);
+
+/// Secondary verdict window: if the first verdict came back empty but the
+/// SDK then fires its callback a moment later, give it this long to deliver
+/// usable attribution and re-ask the config endpoint before accepting the
+/// HomeBerth as final.
+const Duration kLateAttributionWindow = Duration(seconds: 10);
 
 /// Reach probe timeout. 7s accommodates captive-portal redirects without
 /// permanently painting the UnreachableWall.
