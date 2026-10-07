@@ -13,7 +13,8 @@
 // the constructor so unit tests can stub them.
 import 'dart:io' show Platform;
 
-import 'package:flutter/foundation.dart' show PlatformDispatcher;
+import 'package:flutter/foundation.dart'
+    show PlatformDispatcher, debugPrint, kDebugMode;
 
 import 'charts/shrouded_payload.dart';
 import 'outcome/berth.dart';
@@ -47,12 +48,15 @@ class BridgeConductor {
       if (parsed != null &&
           (parsed.isScheme('http') || parsed.isScheme('https'))) {
         await SignalVault.writeTrail(TrailMemory.opened);
+        _log('route=push pending=$pending');
         return PortalBerth(pending);
       }
     }
 
     final trail = await SignalVault.readTrail();
+    _log('trail=$trail');
     if (trail == TrailMemory.stayPut) {
+      _log('route=home (sticky trail)');
       return const HomeBerth();
     }
 
@@ -60,20 +64,28 @@ class BridgeConductor {
     // UnreachableWall screen can retry from without re-running the whole
     // boot pipeline (it just builds a fresh LaunchStage).
     if (!await WaveSensor.isReachable()) {
+      _log('route=unreachable (no reach)');
       return const UnreachableBerth();
     }
 
     if (trail == TrailMemory.opened) {
       final cached = await SignalVault.readCachedDestination();
       if (cached != null) {
+        _log('route=portal (cached) url=$cached');
         return PortalBerth(cached);
       }
       // Cached URL expired — fall through to a full verdict refresh.
     }
 
-    // Step 3 — spin AppsFlyer up (background), warm Firebase push, then ask.
+    // Step 3 — spin AppsFlyer up, wait for the attribution, then ask the
+    // config endpoint for a verdict.
     await _origin.warmUp();
     final attribution = await _origin.captureAttribution();
+    _log('attribution.size=${attribution.length} '
+        'af_status=${attribution['af_status']} '
+        'media_source=${attribution['media_source']} '
+        'campaign=${attribution['campaign']}');
+
     final body = _origin.compose(
       bundleId: applicationId,
       platform: Platform.operatingSystem,
@@ -87,13 +99,34 @@ class BridgeConductor {
     // Merge in the raw attribution map so partner-side filters can look at
     // the campaign/pid/channel fields directly.
     body.addAll(attribution);
+    _log('verdict.body.keys=${body.keys.toList()}');
 
     final berth = await _judgement.ask(body);
+    _log('verdict.berth=$berth');
+
     switch (berth) {
       case PortalBerth():
         await SignalVault.writeTrail(TrailMemory.opened);
       case HomeBerth():
-        await SignalVault.writeTrail(TrailMemory.stayPut);
+        // IMPORTANT: only lock the trail to stayPut if the attribution
+        // explicitly declared the user as organic. Any other reason the
+        // verdict came back empty (SDK still cold, verdict timeout, 5xx,
+        // partner config glitch) is transient — retry on next boot.
+        //
+        // This closes the "sticky HomeBerth" trap: before this guard a
+        // single bad verdict (empty attribution + partner default-reply)
+        // would permanently route the user to the native shell even on
+        // subsequent paid installs, because readTrail() short-circuited
+        // the whole pipeline before any new verdict could be asked.
+        final afStatus = (attribution['af_status']?.toString() ?? '')
+            .toLowerCase()
+            .trim();
+        if (afStatus == 'organic') {
+          await SignalVault.writeTrail(TrailMemory.stayPut);
+          _log('trail→stayPut (declared organic)');
+        } else {
+          _log('trail stays fresh (af_status=$afStatus) — will re-ask next boot');
+        }
       case UnreachableBerth():
         // JudgementCall never returns UnreachableBerth today, but keep the
         // branch so future changes don't silently fall through.
@@ -119,5 +152,10 @@ class BridgeConductor {
 
   void dispose() {
     courier.close();
+  }
+
+  void _log(String msg) {
+    if (!kDebugMode) return;
+    debugPrint('[bridge] $msg');
   }
 }

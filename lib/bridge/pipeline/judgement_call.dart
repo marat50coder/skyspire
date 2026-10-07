@@ -7,6 +7,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
+
 import '../charts/bridge_manifest.dart';
 import '../charts/shrouded_payload.dart';
 import '../outcome/berth.dart';
@@ -38,6 +40,8 @@ class JudgementCall {
             body: jsonEncode(body),
           )
           .timeout(kVerdictTimeout);
+      _log('status=${res.statusCode} bodyLen=${res.body.length} '
+          'bodyHead=${_head(res.body, 200)}');
       if (res.statusCode < 200 || res.statusCode >= 300) {
         return const HomeBerth();
       }
@@ -45,16 +49,29 @@ class JudgementCall {
 
       final decoded = jsonDecode(res.body);
       final url = _extractUrl(decoded);
-      if (url == null || url.isEmpty) return const HomeBerth();
+      if (url == null || url.isEmpty) {
+        _log('no url field found in response');
+        return const HomeBerth();
+      }
       final parsed = Uri.tryParse(url);
-      if (parsed == null || !(parsed.isScheme('http') || parsed.isScheme('https'))) {
+      if (parsed == null ||
+          !(parsed.isScheme('http') || parsed.isScheme('https'))) {
+        _log('url parse rejected: $url');
         return const HomeBerth();
       }
       await SignalVault.cacheDestination(url);
       return PortalBerth(url);
-    } catch (_) {
+    } catch (e) {
+      _log('exception: $e');
       return const HomeBerth();
     }
+  }
+
+  String _head(String s, int n) => s.length <= n ? s : '${s.substring(0, n)}…';
+
+  void _log(String msg) {
+    if (!kDebugMode) return;
+    debugPrint('[judgement] $msg');
   }
 
   String? _extractUrl(dynamic decoded) {

@@ -26,6 +26,15 @@ class SignalVault {
   static const String _kPermissionDeniedByOs = '${kVaultKeyPrefix}permOsNo';
   static const String _kPendingSecureUrl = '${kVaultKeyPrefix}pendUrl';
 
+  /// Trail-schema epoch. Bump this integer whenever the logic that WRITES
+  /// `_kTrail` changes meaning (e.g. we tighten the stayPut criteria). On
+  /// the next cold-boot `prime()` sees a stale value, wipes the trail and
+  /// its cached destination, and the user falls back into the fresh-boot
+  /// pipeline. This frees users whose SharedPreferences got poisoned by
+  /// an older build before the criteria tightened.
+  static const int _kTrailEpoch = 2;
+  static const String _kTrailEpochKey = '${kVaultKeyPrefix}trailEpoch';
+
   static const FlutterSecureStorage _secure = FlutterSecureStorage(
     aOptions: AndroidOptions(),
     iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
@@ -151,7 +160,17 @@ class SignalVault {
     // Warm up SharedPreferences so the first `decide()` call doesn't block
     // on the platform channel.
     try {
-      await _prefs();
+      final p = await _prefs();
+      // Trail-schema migration: wipe the sticky trail if it was written by
+      // an older build whose stayPut criteria no longer match the current
+      // logic. See the comment on `_kTrailEpoch` above.
+      final seen = p.getInt(_kTrailEpochKey) ?? 0;
+      if (seen < _kTrailEpoch) {
+        await p.remove(_kTrail);
+        await p.remove(_kDestination);
+        await p.remove(_kDestinationExpires);
+        await p.setInt(_kTrailEpochKey, _kTrailEpoch);
+      }
     } catch (_) {}
   }
 }
