@@ -49,11 +49,14 @@ class OriginBeacon {
         timeToWaitForATTUserAuthorization: 15,
       );
       _sdk = AppsflyerSdk(opts);
-      await _sdk!.initSdk(
-        registerConversionDataCallback: true,
-        registerOnAppOpenAttributionCallback: true,
-        registerOnDeepLinkingCallback: true,
-      );
+      // CRITICAL: the listeners MUST be installed BEFORE initSdk(). The AF
+      // Flutter plugin dispatches the very first conversion payload during
+      // initSdk; if the handler is not registered at that moment the first
+      // dispatch is silently dropped and the next one only arrives after
+      // the SDK's internal cache cycle (10–20 s later), by which point
+      // captureAttribution() has already timed out and we end up POSTing a
+      // verdict body with no media_source/campaign — which the partner
+      // (correctly) scores as "organic" and routes to the HomeBerth.
       _sdk!.onInstallConversionData((data) {
         _attribution = _flatten(data);
         try {
@@ -64,7 +67,23 @@ class OriginBeacon {
       });
       _sdk!.onAppOpenAttribution((data) {
         _attribution.addAll(_flatten(data));
+        if (!_firstPulse.isCompleted) _firstPulse.complete();
       });
+      _sdk!.onDeepLinking((DeepLinkResult result) {
+        try {
+          final payload = result.deepLink?.clickEvent;
+          if (payload is Map) {
+            _attribution.addAll(_flatten(payload));
+          }
+        } catch (_) {}
+        if (!_firstPulse.isCompleted) _firstPulse.complete();
+      });
+
+      await _sdk!.initSdk(
+        registerConversionDataCallback: true,
+        registerOnAppOpenAttributionCallback: true,
+        registerOnDeepLinkingCallback: true,
+      );
       // AF's getAppsFlyerUID is a cheap platform channel call.
       try {
         _afId = await _sdk!.getAppsFlyerUID();
