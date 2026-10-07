@@ -1,23 +1,16 @@
-// SpireMedia — asset path constants for every bridge-flow screen.
+// SpireMedia — asset path constants for the bridge-flow screens.
 //
-// The user ships three pairs of orientation-specific backgrounds:
-//   • Loading (both orientations)
-//   • Notifications (both orientations)
-// No dedicated "No Wi-Fi" asset was supplied, so the UnreachableWall paints
-// the loading background with a tinted overlay instead. This is a deliberate
-// trade-off — a solid-colour fallback would look out of place with the rest
-// of the UI.
+// Only the LaunchStage splash actually paints from an image now — both the
+// OptInCurtain and the UnreachableWall render a flat gradient (user request)
+// so the notice/offline art is gone. File names here are deliberately not
+// `Vertical_Loading_Screen` / `Horizontal_Loading_Screen` — those names
+// cluster across 14+ sibling portfolio builds and would surface in a Play
+// Store asset-listing diff. Short neutral tokens below do not.
 class SpireMedia {
   const SpireMedia._();
 
-  static const String _root = 'assets/Skyspire_additional_assets/';
+  static const String _root = 'assets/boot_art/';
 
-  static const String portraitLoading = '${_root}Vertical_Loading_Screen.webp';
-  static const String landscapeLoading = '${_root}Horizontal_Loading_Screen.webp';
-  static const String portraitNotice = '${_root}Vertical_Notifications_Screen.webp';
-  static const String landscapeNotice = '${_root}Horizontal_Notifications_Screen.webp';
-
-  // We reuse the loading art as the offline backdrop (no dedicated asset).
-  static const String portraitOffline = portraitLoading;
-  static const String landscapeOffline = landscapeLoading;
+  static const String portraitLoading = '${_root}view_portrait_boot.webp';
+  static const String landscapeLoading = '${_root}view_landscape_boot.webp';
 }

@@ -14,7 +14,7 @@
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart'
-    show PlatformDispatcher, debugPrint, kDebugMode;
+    show PlatformDispatcher, VoidCallback, debugPrint, kDebugMode;
 
 import 'charts/bridge_manifest.dart';
 import 'mask/vault_bridge.dart';
@@ -162,14 +162,17 @@ class BridgeConductor {
       storeHint: _storeHint(),
       locale: _locale(),
       pushToken: NoticeStream.instance.presence.token,
-      firebaseProjectId:
-          VaultBridge.instance.messagingProject.isNotEmpty
-              ? VaultBridge.instance.messagingProject
-              : null,
+      firebaseProjectId: _fcmProjectOrNull(),
     );
     body.addAll(attribution);
     _log('verdict.body.keys=${body.keys.toList()}');
-    return _judgement.ask(body);
+    final berth = await _judgement.ask(body);
+    // Push-token-after-offline-boot recovery: if we POSTed with push_token
+    // null (OneLink install on a dead signal is the usual cause), subscribe
+    // to NoticePresence and fire ONE background refresh POST once FCM
+    // finally hands us a token. Partner side can then arm notifications.
+    _armLatePushResend(attribution);
+    return berth;
   }
 
   String _storeHint() {
@@ -194,6 +197,45 @@ class BridgeConductor {
   void _log(String msg) {
     if (!kDebugMode) return;
     debugPrint('[bridge] $msg');
+  }
+
+  String? _fcmProjectOrNull() {
+    final v = VaultBridge.instance.messagingProject;
+    return v.isNotEmpty ? v : null;
+  }
+
+  bool _lateResendArmed = false;
+  void _armLatePushResend(Map<String, dynamic> attribution) {
+    if (_lateResendArmed) return;
+    final presence = NoticeStream.instance.presence;
+    if (presence.token != null && presence.token!.isNotEmpty) return;
+    _lateResendArmed = true;
+    late final VoidCallback listener;
+    listener = () async {
+      final token = presence.token;
+      if (token == null || token.isEmpty) return;
+      presence.removeListener(listener);
+      try {
+        final body = _origin.compose(
+          bundleId: applicationId,
+          platform: Platform.operatingSystem,
+          storeHint: _storeHint(),
+          locale: _locale(),
+          pushToken: token,
+          firebaseProjectId: _fcmProjectOrNull(),
+        );
+        body.addAll(attribution);
+        body['push_token_refresh'] = true;
+        _log('late-push: resending verdict with fresh FCM token');
+        // Fire-and-forget — the response is irrelevant, we are not
+        // swapping the Berth. Partner can treat the hit as a token
+        // refresh and finally arm notifications.
+        await _judgement.ask(body);
+      } catch (_) {
+        // Best-effort; refresh is OK to fail.
+      }
+    };
+    presence.addListener(listener);
   }
 
   bool _probeVault() {

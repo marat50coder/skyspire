@@ -131,14 +131,17 @@ class _OptInCurtainState extends State<OptInCurtain> {
     );
   }
 
-  // Portrait: headline up top, two full-width stacked pills down bottom.
+  // Portrait: headline pulled down to the vertical mid-point, pills pinned
+  // to the bottom. User explicitly asked for the copy to sit closer to the
+  // centre of the screen in vertical mode (default top-anchored layout
+  // looked too high against the gradient background).
   Widget _buildPortrait() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        const SizedBox(height: 16),
+        const Spacer(flex: 5),
         _buildHeadline(),
-        const Spacer(),
+        const Spacer(flex: 4),
         SpirePillTap(
           label: 'Accept',
           onPressed: _busy ? null : _accept,

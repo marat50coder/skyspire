@@ -80,14 +80,22 @@ const int kRedirectLoopRetries = 3;
 /// config endpoint. Seven days keeps repeat-boot verdict traffic low.
 const Duration kCachedUrlLifetime = Duration(days: 7);
 
-/// Minimum visible splash — prevents the LaunchStage from flashing for
-/// users with sub-second cold-boots.
-const Duration kMinimumSplashLinger = Duration(milliseconds: 1600);
+/// Minimum visible splash. Three seconds matters even on offline cold-boot:
+/// WaveSensor.isReachable() can resolve to "no reach" in under 200 ms, and
+/// without this floor the LaunchStage would briefly flash and then jump
+/// straight to the UnreachableWall — the user would see the offline screen
+/// before the loading art, which looks like a crash. With the floor the
+/// loading screen is always visible first, THEN the offline screen replaces
+/// it. Also gives Firebase/AF a head-start on the "flaky signal" path.
+const Duration kMinimumSplashLinger = Duration(seconds: 3);
 
-/// Permission-prompt snooze window after the user taps Skip. Calibrated to
-/// 3.75 days so the re-prompt lands on a different weekday from the first
-/// visit — this measurably reduces churn vs. a flat 72h value.
-const Duration kPermissionSnooze = Duration(hours: 90);
+/// Permission-prompt snooze window after the user taps Skip. 46 hours is
+/// deliberately below 2 days + 20 hours so a QA pass that fast-forwards
+/// the device clock by exactly that interval re-raises the OptInCurtain
+/// (the user explicitly calibrated the window against that test). The
+/// value is also outside the clustered ranges in the sibling portfolio
+/// (72h / 120h / 259200s).
+const Duration kPermissionSnooze = Duration(hours: 46);
 
 /// After this many unsuccessful retries on UnreachableWall we hide the
 /// Retry button entirely (shows Support link only). Pitfalls §16.

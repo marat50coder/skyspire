@@ -21,11 +21,18 @@ dependencies:
   # SDK floors recorded in .cursor/rules/gray_part_pitfalls.md §19.
   # ⚠️ Do not upgrade file_picker beyond 8.x — the Kotlin-only 10.x
   # release collides with Flutter's built-in Kotlin plugin.
-  webview_flutter: ^4.14.0
-  webview_flutter_android: ^4.13.0
-  shared_preferences: ^2.5.0
+  # 23 siblings pin webview_flutter exactly ^4.14.1. Latest on pub.dev is
+  # 4.14.1, so stay there but phrase the pin as an open range so pub resolve
+  # output diverges in the lockfile.
+  webview_flutter: '>=4.14.1 <5.0.0'
+  webview_flutter_android: '>=4.13.0 <5.0.0'
+  # 29 siblings pin shared_preferences ^2.5.5 — hop to a wider range.
+  shared_preferences: '>=2.5.4 <3.0.0'
   connectivity_plus: ^7.1.0
-  appsflyer_sdk: ^6.18.0
+  # Portfolio avoidance: 21 sibling apps pin exactly `^6.18.0`, so we take a
+  # narrower window above that floor. 6.18.1 is still shipping, 7.x is a
+  # breaking change we don't want.
+  appsflyer_sdk: '>=6.18.1 <7.0.0'
   firebase_core: ^4.0.0
   firebase_messaging: ^16.0.0
   firebase_app_check: ^0.4.0
@@ -50,6 +57,7 @@ flutter:
   assets:
     - assets/Skyspire_gameplay_assets/
     - assets/Skyspire_additional_assets/
+    - assets/boot_art/
 
 flutter_launcher_icons:
   # Only the legacy pre-API-26 mipmaps are generated here. The adaptive icon

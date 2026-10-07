@@ -107,8 +107,8 @@ class _LoadingScreenState extends State<LoadingScreen>
         builder: (BuildContext context, BoxConstraints c) {
           final bool portrait = c.maxHeight >= c.maxWidth;
           final String bg = portrait
-              ? 'assets/Skyspire_additional_assets/Vertical_Loading_Screen.webp'
-              : 'assets/Skyspire_additional_assets/Horizontal_Loading_Screen.webp';
+              ? 'assets/boot_art/view_portrait_boot.webp'
+              : 'assets/boot_art/view_landscape_boot.webp';
           final double barWidth = math.min(c.maxWidth * 0.72, 460);
           final double fontSize = portrait ? 18 : 16;
 

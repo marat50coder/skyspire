@@ -17,6 +17,12 @@ import 'signal_vault.dart';
 
 /// Observed state so callers (SpireShell) can rebuild once the push token
 /// arrives — nothing in the pipeline blocks on it though.
+///
+/// This also powers the "push-token-after-offline-boot" recovery: if the
+/// first verdict call shipped with push_token=null (because FCM needed the
+/// network and the user installed via OneLink on a dead connection), the
+/// BridgeConductor listens here for a later token arrival and fires a
+/// background refresh POST so the partner can finally arm notifications.
 class NoticePresence extends ChangeNotifier {
   String? _token;
   String? get token => _token;

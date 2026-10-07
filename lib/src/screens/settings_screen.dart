@@ -28,8 +28,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         builder: (BuildContext context, BoxConstraints c) {
           final bool portrait = c.maxHeight >= c.maxWidth;
           final String bg = portrait
-              ? 'assets/Skyspire_additional_assets/Vertical_Loading_Screen.webp'
-              : 'assets/Skyspire_additional_assets/Horizontal_Loading_Screen.webp';
+              ? 'assets/boot_art/view_portrait_boot.webp'
+              : 'assets/boot_art/view_landscape_boot.webp';
           return Stack(
             fit: StackFit.expand,
             children: <Widget>[

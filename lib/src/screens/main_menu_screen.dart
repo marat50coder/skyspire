@@ -30,8 +30,8 @@ class MainMenuScreen extends StatelessWidget {
         builder: (BuildContext context, BoxConstraints c) {
           final bool portrait = c.maxHeight >= c.maxWidth;
           final String bg = portrait
-              ? 'assets/Skyspire_additional_assets/Vertical_Loading_Screen.webp'
-              : 'assets/Skyspire_additional_assets/Horizontal_Loading_Screen.webp';
+              ? 'assets/boot_art/view_portrait_boot.webp'
+              : 'assets/boot_art/view_landscape_boot.webp';
           final double buttonWidth = (c.maxWidth * 0.72).clamp(240.0, 420.0);
 
           return Stack(
