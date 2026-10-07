@@ -19,6 +19,7 @@ import 'package:flutter/services.dart';
 import 'package:rinf/rinf.dart';
 
 import 'bridge/pipeline/gadget_fingerprint.dart';
+import 'bridge/pipeline/notice_stream.dart';
 import 'bridge/pipeline/signal_vault.dart';
 import 'shell/spire_shell.dart';
 import 'src/bindings/bindings.dart';
@@ -53,10 +54,15 @@ Future<void> main() async {
     await Firebase.initializeApp();
   } catch (_) {}
 
-  // Fire the two prime-only tasks in parallel.
+  // Fire the prime-only tasks in parallel. NoticeStream.primeToken() grabs
+  // the FCM registration token without raising the user-facing permission
+  // dialog — important so BridgeConductor.compose() can embed `push_token`
+  // in the very first verdict call. The permission dialog itself is still
+  // deferred to OptInCurtain.Accept.
   await Future.wait<void>(<Future<void>>[
     SignalVault.prime(),
     GadgetFingerprint.prime(kApplicationId),
+    NoticeStream.instance.primeToken(),
   ]);
 
   // Rust engine comes up last so its FFI port is open before LoadingScreen

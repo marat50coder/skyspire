@@ -17,7 +17,6 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 
-import '../../shell/spire_theme.dart';
 import '../charts/bridge_manifest.dart';
 import '../pipeline/gadget_fingerprint.dart';
 import '../pipeline/lens_enhancers.dart';
@@ -72,7 +71,7 @@ class _AperturePaneState extends State<AperturePane> {
     final ctl = WebViewController.fromPlatformCreationParams(params);
     ctl
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(SpirePalette.abyssDeep)
+      ..setBackgroundColor(Colors.black)
       ..setUserAgent(GadgetFingerprint.currentUa(widget.applicationId))
       ..enableZoom(false)
       ..setNavigationDelegate(NavigationDelegate(
@@ -206,9 +205,24 @@ class _AperturePaneState extends State<AperturePane> {
         Navigator.of(context).maybePop();
       },
       child: Scaffold(
-        backgroundColor: SpirePalette.abyssDeep,
-        body: SafeArea(
-          minimum: EdgeInsets.zero,
+        // Safe-area background must be pure black per user request — any
+        // tint around the notch / punch-hole / gesture pill looks like a
+        // bezel border on OLED devices.
+        backgroundColor: Colors.black,
+        // Do NOT let Flutter resize the body when the IME opens. Resizing
+        // the native WebView surface frame-by-frame during the keyboard
+        // slide is what caused the typing lag the user reported. The page
+        // itself lifts the focused field through LensEnhancers' JS
+        // (visualViewport.resize + scrollIntoView). AndroidManifest still
+        // declares `windowSoftInputMode="adjustResize"`, which is what
+        // triggers the viewport resize event the JS listens on.
+        resizeToAvoidBottomInset: false,
+        body: Padding(
+          // Pad ONLY for the physical cutouts (notch, punch-hole, gesture
+          // bar). `viewPadding` gives those insets; `padding` from
+          // MediaQuery would also fold in the keyboard inset and defeat
+          // the `resizeToAvoidBottomInset: false` above.
+          padding: MediaQuery.viewPaddingOf(context),
           child: WebViewWidget(controller: _controller),
         ),
       ),

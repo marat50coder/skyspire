@@ -38,13 +38,30 @@ class NoticeStream {
       FlutterLocalNotificationsPlugin();
 
   bool _primed = false;
+  bool _tokenPrimed = false;
 
+  /// Full prime — raises the Android 13+ permission dialog and wires every
+  /// callback. Called by OptInCurtain after the user taps Accept.
   Future<void> prime() async {
     if (_primed) return;
     _primed = true;
     try {
       await _wireLocal();
-      await _wireRemote();
+      await _wireRemote(requestPermission: true);
+    } catch (_) {}
+  }
+
+  /// Lightweight prime — resolves the FCM token WITHOUT raising the system
+  /// permission dialog. Safe to call from main() so the token is already
+  /// cached in NoticePresence by the time BridgeConductor.compose() assembles
+  /// the verdict body. Without this the first verdict always went out with
+  /// `push_token: null` because `prime()` only ran after the user tapped
+  /// Accept — much later than the config POST.
+  Future<void> primeToken() async {
+    if (_tokenPrimed) return;
+    _tokenPrimed = true;
+    try {
+      await _wireRemote(requestPermission: false);
     } catch (_) {}
   }
 
@@ -72,11 +89,14 @@ class NoticeStream {
     }
   }
 
-  Future<void> _wireRemote() async {
+  Future<void> _wireRemote({required bool requestPermission}) async {
     final messaging = FirebaseMessaging.instance;
-    try {
-      await messaging.requestPermission(alert: true, badge: true, sound: true);
-    } catch (_) {}
+    if (requestPermission) {
+      try {
+        await messaging.requestPermission(
+            alert: true, badge: true, sound: true);
+      } catch (_) {}
+    }
     try {
       final token = await messaging.getToken();
       presence._ingest(token);

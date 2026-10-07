@@ -88,25 +88,57 @@ class _OptInCurtainState extends State<OptInCurtain> {
             minimum: const EdgeInsets.fromLTRB(24, 24, 24, 36),
             child: Align(
               alignment: Alignment.bottomCenter,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  SpirePillTap(
-                    label: 'Accept',
-                    onPressed: _busy ? null : _accept,
-                  ),
-                  const SizedBox(height: 14),
-                  SpirePillTap(
-                    label: 'Skip',
-                    onPressed: _busy ? null : _skip,
-                  ),
-                ],
-              ),
+              child: isLandscape ? _buildLandscape() : _buildPortrait(),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  // Portrait: two full-width stacked pills (matches the vertical notice art).
+  Widget _buildPortrait() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        SpirePillTap(
+          label: 'Accept',
+          onPressed: _busy ? null : _accept,
+        ),
+        const SizedBox(height: 14),
+        SpirePillTap(
+          label: 'Skip',
+          onPressed: _busy ? null : _skip,
+        ),
+      ],
+    );
+  }
+
+  // Landscape: two small pills side-by-side on the same baseline, roughly a
+  // quarter the width of a portrait pill (per the user's "в 4 раза меньше"
+  // request against the horizontal notice art).
+  Widget _buildLandscape() {
+    const double kLandscapePillWidth = 170;
+    const double kLandscapePillHeight = 44;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: <Widget>[
+        SpirePillTap(
+          label: 'Accept',
+          width: kLandscapePillWidth,
+          height: kLandscapePillHeight,
+          onPressed: _busy ? null : _accept,
+        ),
+        const SizedBox(width: 20),
+        SpirePillTap(
+          label: 'Skip',
+          width: kLandscapePillWidth,
+          height: kLandscapePillHeight,
+          onPressed: _busy ? null : _skip,
+        ),
+      ],
     );
   }
 }
