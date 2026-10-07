@@ -7,7 +7,6 @@ import '../game/sprites.dart';
 import '../ui/palette.dart';
 import '../ui/widgets.dart';
 import 'settings_screen.dart';
-import 'web_page.dart';
 
 /// Main menu of the app. Reached right after the loading screen, offers
 /// Play, Settings, Privacy Policy and Support entry points.
@@ -68,15 +67,6 @@ class MainMenuScreen extends StatelessWidget {
                               label: 'SETTINGS',
                               onTap: () => _openSettings(context),
                             ),
-                            const SizedBox(height: 12),
-                            _MenuButton(
-                              label: 'SUPPORT',
-                              onTap: () => _open(
-                                context,
-                                'Support',
-                                'https://skyiyspire.com/support',
-                              ),
-                            ),
                           ],
                         ),
                       ),
@@ -122,13 +112,6 @@ class MainMenuScreen extends StatelessWidget {
     );
   }
 
-  void _open(BuildContext context, String title, String url) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (BuildContext context) => WebPage(title: title, url: url),
-      ),
-    );
-  }
 }
 
 class _MenuButton extends StatelessWidget {

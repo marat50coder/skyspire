@@ -6,8 +6,8 @@
 // bundle-diff with any other project in the owner's Google Play portfolio
 // does not line up byte-for-byte on the primitive constants.
 
-/// Config endpoint schema version. The partner's `config.php` echoes this
-/// field back; we only accept verdicts whose `schema` matches.
+/// Config endpoint schema version. The partner echoes this field back; we
+/// only accept verdicts whose `schema` matches.
 const int kManifestSchemaRev = 7;
 
 /// Portfolio uniqueness guard — see `.cursor/rules/portfolio_registry.md`.

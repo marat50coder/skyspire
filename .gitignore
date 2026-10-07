@@ -57,3 +57,14 @@ app.*.map.json
 /native/hub/target/
 /native/**/target/
 .rinf/
+
+# Firebase credentials — google-services.json is required locally to build
+# but should not drift between portfolio builds in git. Keep the current
+# committed copy; new rotations go through secret-store, not a PR.
+# (Entry intentionally commented until the next rotation to not break the
+#  existing checked-in copy.)
+# android/app/google-services.json
+
+# Rust vault build artefacts — the .so files under android/app/src/main/jniLibs
+# ARE committed (shipped with the APK). The intermediate target/ is not.
+native/*/target/

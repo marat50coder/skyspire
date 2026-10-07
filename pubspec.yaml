@@ -25,7 +25,7 @@ dependencies:
   webview_flutter_android: ^4.13.0
   shared_preferences: ^2.5.0
   connectivity_plus: ^7.1.0
-  appsflyer_sdk: ^6.17.0
+  appsflyer_sdk: ^6.18.0
   firebase_core: ^4.0.0
   firebase_messaging: ^16.0.0
   firebase_app_check: ^0.4.0
@@ -34,6 +34,10 @@ dependencies:
   device_info_plus: ^11.0.0
   http: ^1.5.0
   url_launcher: ^6.3.0
+
+  # dart:ffi helpers (Pointer<Utf8>, calloc). Required by VaultBridge to talk
+  # to libspire_vault.so.
+  ffi: ^2.1.0
 
 dev_dependencies:
   flutter_test:

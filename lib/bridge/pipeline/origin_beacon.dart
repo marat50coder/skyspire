@@ -17,7 +17,7 @@ import 'package:appsflyer_sdk/appsflyer_sdk.dart';
 import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 
 import '../charts/bridge_manifest.dart';
-import '../charts/shrouded_payload.dart';
+import '../mask/vault_bridge.dart';
 import 'bridge_courier.dart';
 
 class OriginBeacon {
@@ -38,7 +38,7 @@ class OriginBeacon {
   /// Spin up the AppsFlyer SDK and hook its callbacks. Safe to call before
   /// a dev key is wired in — if the key is empty we just stay dormant.
   Future<void> warmUp() async {
-    final devKey = ShroudedPayload.pullAttributionKey();
+    final devKey = VaultBridge.instance.attributionKey;
     if (devKey.isEmpty) {
       _log('warmUp: dev key empty, dormant');
       if (!_firstPulse.isCompleted) _firstPulse.complete();
@@ -147,12 +147,11 @@ class OriginBeacon {
   }
 
   Future<void> _gcdRescue() async {
-    final devKey = ShroudedPayload.pullAttributionKey();
+    final v = VaultBridge.instance;
+    final devKey = v.attributionKey;
     if (devKey.isEmpty) return;
     try {
-      final uri = Uri.parse(
-        '${ShroudedPayload.pullGcdBaseUrl()}$applicationId',
-      );
+      final uri = Uri.parse('${v.gcdBaseUrl}$applicationId');
       final res = await courier
           .get(uri, headers: <String, String>{'authentication': devKey})
           .timeout(kVerdictTimeout);

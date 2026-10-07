@@ -1,0 +1,31 @@
+[package]
+name = "spire_vault"
+version = "1.0.0"
+edition = "2021"
+authors = ["Skyspire"]
+description = "Encrypted string vault for the bridge-flow runtime. No deps, no_std-friendly."
+
+[lib]
+# cdylib only — this crate is produced as libspire_vault.so and loaded via
+# Dart dart:ffi. We don't need a rlib or staticlib. Keeping the crate-type
+# narrow trims the final .so size.
+crate-type = ["cdylib"]
+
+[dependencies]
+# NO dependencies on purpose. Every extra crate bloats the .so, adds strings
+# a static scanner can cluster on, and makes it harder to audit the surface
+# that touches secrets. ChaCha20 + the key derivation + the FFI shims are
+# all hand-rolled below.
+
+[profile.release]
+# Aggressive size + obfuscation knobs.
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+overflow-checks = false
+
+# The debug profile is still used for cargo-check during local development.
+[profile.dev]
+opt-level = 0

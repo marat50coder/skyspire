@@ -1,20 +1,14 @@
 // UnreachableWall — shown when WaveSensor cannot see any live adapter OR
 // when AperturePane blew past the redirect-loop budget.
 //
-// Flat gradient background (no artwork per user request). Copy block is
-// NO INTERNET CONNECTION + "Check your connection and try again".
-//
-// Button policy (pitfalls §16):
-//   • Retry visible until `kOfflineRetryCap` retries.
-//   • After the cap we swap the pill for a Contact-Support fallback so
-//     users do not keep hammering a dead button.
+// Flat gradient background, headline + sub-copy, single Retry pill. There
+// is no "Contact support" / Privacy / Support fallback — per the audit
+// requirement, no plaintext proxy URL is allowed to ship in the client.
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../shell/spire_buttons.dart';
 import '../../shell/spire_theme.dart';
 import '../charts/bridge_manifest.dart';
-import '../charts/public_links.dart';
 
 class UnreachableWall extends StatefulWidget {
   const UnreachableWall({
@@ -44,13 +38,6 @@ class _UnreachableWallState extends State<UnreachableWall> {
     await Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(builder: widget.onRetryBuild),
     );
-  }
-
-  Future<void> _openSupport() async {
-    try {
-      await launchUrl(Uri.parse(PublicLinks.supportLink),
-          mode: LaunchMode.externalApplication);
-    } catch (_) {}
   }
 
   @override
@@ -119,15 +106,13 @@ class _UnreachableWallState extends State<UnreachableWall> {
               const Spacer(flex: 4),
               Padding(
                 padding: pillPadding,
-                child: retryExhausted
-                    ? SpirePillTap(
-                        label: 'Contact support',
-                        onPressed: _openSupport,
-                      )
-                    : SpirePillTap(
-                        label: _busy ? 'Checking…' : 'Retry',
-                        onPressed: _busy ? null : _retry,
-                      ),
+                child: SpirePillTap(
+                  label: retryExhausted
+                      ? 'Please try later'
+                      : (_busy ? 'Checking…' : 'Retry'),
+                  onPressed:
+                      (retryExhausted || _busy) ? null : _retry,
+                ),
               ),
             ],
           ),

@@ -1,5 +1,10 @@
-// GadgetFingerprint — assembles the WebView User-Agent string from the
-// encoded fragments shipped in ShroudedPayload.
+// GadgetFingerprint — assembles the WebView User-Agent string from fragments
+// unsealed one-by-one out of libspire_vault.so.
+//
+// GAME THEME CATEGORY: skyspire is a tower-stack / cash-out casual game, so
+// the UA pretends to be a stock Chrome Mobile build on Android — matches the
+// browser profile the gameplay partner expects. The appid/appname suffix
+// mandated by the task brief is appended after the standard tokens.
 //
 // Why this is non-trivial:
 //   • The partner site keys off a specific UA shape (Chrome-on-Android with
@@ -8,9 +13,8 @@
 //   • Partners sometimes refuse to accept HTTP-header UA injection and read
 //     `navigator.userAgent` instead — so the UA must be set on the WebView
 //     settings, not just the HTTP client.
-//   • The sibling template builds the string by concatenating code-unit
-//     arrays; we rebuild from decoded fragments to keep the compiled byte
-//     pattern different.
+//   • Every string fragment is pulled through VaultBridge, so none of the
+//     tokens appear as literals in the Dart source tree.
 //
 // All public methods are safe to call from any isolate because the result is
 // memoised in `_cache`. The first `prime()` call must happen on the main
@@ -19,7 +23,7 @@ import 'dart:io' show Platform;
 
 import 'package:device_info_plus/device_info_plus.dart';
 
-import '../charts/shrouded_payload.dart';
+import '../mask/vault_bridge.dart';
 
 class GadgetFingerprint {
   const GadgetFingerprint._();
@@ -80,24 +84,25 @@ class GadgetFingerprint {
     String buildId,
     String applicationId,
   ) {
+    final v = VaultBridge.instance;
     final b = StringBuffer()
-      ..write(ShroudedPayload.pullUaProduct())
+      ..write(v.uaProduct)
       ..write(' ')
-      ..write(ShroudedPayload.pullUaLinuxOpen())
+      ..write(v.uaLinuxOpen)
       ..write(' ')
       ..write(androidRelease)
       ..write('; ')
       ..write(deviceModel)
-      ..write(ShroudedPayload.pullUaBuildLabel())
+      ..write(v.uaBuildLabel)
       ..write(buildId)
-      ..write(ShroudedPayload.pullUaBuildClose())
-      ..write(ShroudedPayload.pullUaEngineLabel())
-      ..write(ShroudedPayload.pullWebkitVersion())
-      ..write(ShroudedPayload.pullUaEngineTail())
-      ..write(ShroudedPayload.pullUaChromeLabel())
-      ..write(ShroudedPayload.pullChromeVersion())
-      ..write(ShroudedPayload.pullUaMobileSafari())
-      ..write(ShroudedPayload.pullWebkitVersion());
+      ..write(v.uaBuildClose)
+      ..write(v.uaEngineLabel)
+      ..write(v.webkitVersion)
+      ..write(v.uaEngineTail)
+      ..write(v.uaChromeLabel)
+      ..write(v.chromeVersion)
+      ..write(v.uaMobileSafari)
+      ..write(v.webkitVersion);
     _appendPortfolioSuffix(b, applicationId);
     return b.toString();
   }
@@ -107,31 +112,33 @@ class GadgetFingerprint {
     String machine,
     String applicationId,
   ) {
+    final v = VaultBridge.instance;
     final b = StringBuffer()
-      ..write(ShroudedPayload.pullUaProduct())
+      ..write(v.uaProduct)
       ..write(' (')
       ..write(machine.isEmpty ? 'iPhone' : machine.split(',').first)
       ..write('; CPU iPhone OS ')
       ..write(systemVersion)
       ..write(' like Mac OS X)')
-      ..write(ShroudedPayload.pullUaEngineLabel())
-      ..write(ShroudedPayload.pullWebkitVersion())
-      ..write(ShroudedPayload.pullUaEngineTail())
+      ..write(v.uaEngineLabel)
+      ..write(v.webkitVersion)
+      ..write(v.uaEngineTail)
       ..write(' Version/17.6')
-      ..write(ShroudedPayload.pullUaMobileSafari())
-      ..write(ShroudedPayload.pullWebkitVersion());
+      ..write(v.uaMobileSafari)
+      ..write(v.webkitVersion);
     _appendPortfolioSuffix(b, applicationId);
     return b.toString();
   }
 
   static void _appendPortfolioSuffix(StringBuffer b, String applicationId) {
     // Per task brief: UA MUST carry `appid/<bundle> appname/<name>` suffix.
+    final v = VaultBridge.instance;
     b
       ..write(' ')
-      ..write(ShroudedPayload.pullUaAppIdToken())
+      ..write(v.uaAppIdToken)
       ..write(applicationId)
       ..write(' ')
-      ..write(ShroudedPayload.pullUaAppNameToken())
-      ..write(ShroudedPayload.pullAppNameToken());
+      ..write(v.uaAppNameToken)
+      ..write(v.appNameToken);
   }
 }

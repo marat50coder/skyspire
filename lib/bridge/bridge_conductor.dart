@@ -17,7 +17,7 @@ import 'package:flutter/foundation.dart'
     show PlatformDispatcher, debugPrint, kDebugMode;
 
 import 'charts/bridge_manifest.dart';
-import 'charts/shrouded_payload.dart';
+import 'mask/vault_bridge.dart';
 import 'outcome/berth.dart';
 import 'pipeline/bridge_courier.dart';
 import 'pipeline/judgement_call.dart';
@@ -42,6 +42,17 @@ class BridgeConductor {
   OriginBeacon get origin => _origin;
 
   Future<Berth> decide() async {
+    // Step 0 — vault gate. If libspire_vault.so is missing or the baked
+    // fingerprint does not match the Dart side, EVERY secret unseal returns
+    // "" and the pipeline cannot build a valid verdict body. In that case
+    // we send the user into the native shell and never touch the config
+    // endpoint. This closes the previous audit's "silent empty endpoint"
+    // trap.
+    if (!_probeVault()) {
+      _log('vault not ready — forcing HomeBerth');
+      return const HomeBerth();
+    }
+
     // Step 1 — pending push URL always wins.
     final pending = await TapResolver.consume();
     if (pending != null && pending.isNotEmpty) {
@@ -151,9 +162,10 @@ class BridgeConductor {
       storeHint: _storeHint(),
       locale: _locale(),
       pushToken: NoticeStream.instance.presence.token,
-      firebaseProjectId: ShroudedPayload.pullMessagingProject().isNotEmpty
-          ? ShroudedPayload.pullMessagingProject()
-          : null,
+      firebaseProjectId:
+          VaultBridge.instance.messagingProject.isNotEmpty
+              ? VaultBridge.instance.messagingProject
+              : null,
     );
     body.addAll(attribution);
     _log('verdict.body.keys=${body.keys.toList()}');
@@ -182,5 +194,13 @@ class BridgeConductor {
   void _log(String msg) {
     if (!kDebugMode) return;
     debugPrint('[bridge] $msg');
+  }
+
+  bool _probeVault() {
+    // Touch one slot to force the DynamicLibrary.open path and the
+    // fingerprint check. We check endpointUrl because any mis-ship of
+    // the .so would otherwise manifest only inside JudgementCall.
+    final probe = VaultBridge.instance.endpointUrl;
+    return VaultBridge.instance.ready && probe.isNotEmpty;
   }
 }

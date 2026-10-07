@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../data/settings.dart';
 import '../data/wallet.dart';
 import '../ui/palette.dart';
-import 'web_page.dart';
 
 /// User preferences screen: vibration, reduced FX, progress reset.
 class SettingsScreen extends StatefulWidget {
@@ -109,20 +108,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 icon: Icons.emoji_events,
                                 label: 'Best win',
                                 value: '${formatCoins(widget.wallet.best)} coins',
-                              ),
-                              const _Divider(),
-                              _TapRow(
-                                icon: Icons.privacy_tip_outlined,
-                                label: 'Privacy Policy',
-                                subtitle: 'skyiyspire.com/privacy-policy',
-                                onTap: () => Navigator.of(context).push(
-                                  MaterialPageRoute<void>(
-                                    builder: (_) => const WebPage(
-                                      title: 'Privacy Policy',
-                                      url: 'https://skyiyspire.com/privacy-policy',
-                                    ),
-                                  ),
-                                ),
                               ),
                               const _Divider(),
                               _TapRow(

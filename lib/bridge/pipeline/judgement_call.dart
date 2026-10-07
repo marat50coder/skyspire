@@ -10,7 +10,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 
 import '../charts/bridge_manifest.dart';
-import '../charts/shrouded_payload.dart';
+import '../mask/vault_bridge.dart';
 import '../outcome/berth.dart';
 import 'bridge_courier.dart';
 import 'signal_vault.dart';
@@ -24,7 +24,7 @@ class JudgementCall {
   /// `TrailMemory.stayPut` state. On a positive verdict we also cache the
   /// resolved URL via SignalVault.
   Future<Berth> ask(Map<String, dynamic> body) async {
-    final endpoint = ShroudedPayload.pullEndpointUrl();
+    final endpoint = VaultBridge.instance.endpointUrl;
     if (endpoint.isEmpty) return const HomeBerth();
     final uri = Uri.tryParse(endpoint);
     if (uri == null) return const HomeBerth();
