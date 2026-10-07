@@ -1,32 +1,36 @@
-// OptInCurtain — the "would you like notifications?" interstitial.
+// OptInCurtain — "would you like notifications?" interstitial.
 //
-// Buttons (per user brief): ACCEPT + SKIP.
-// Flow:
-//   • ACCEPT → NoticeStream.prime() → push the next Berth.
-//   • SKIP   → stamp a 90-hour snooze into SignalVault → push the next Berth.
+// Chrome stripped down per request: no title, no body copy, no privacy link.
+// Only the two pill buttons remain (Accept + Skip, both share the same
+// ember gradient).
 //
-// Both paths always continue — this screen is strictly informational. The
-// permission dialog itself is raised by NoticeStream.prime(); if the OS
-// rejects it (user tapped "Don't allow" earlier) we flip the OS-denied flag
-// so we never re-ask on this install.
+// Navigation ownership used to live in LaunchStage via an onDecided
+// callback. That caused a subtle bug: LaunchStage pushReplaces this curtain
+// onto itself, so by the time the user tapped Accept, LaunchStage.State was
+// already disposed, `_mounted` was false, and the callback silently did
+// nothing. The user saw the notification system dialog, tapped Allow, and
+// then... stayed on the curtain. Now this screen owns the next hop
+// directly: it knows the destination URL + applicationId and does its own
+// `Navigator.pushReplacement(AperturePane(...))`.
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../shell/spire_buttons.dart';
 import '../../shell/spire_media.dart';
 import '../../shell/spire_theme.dart';
 import '../charts/bridge_manifest.dart';
-import '../charts/public_links.dart';
 import '../pipeline/notice_stream.dart';
 import '../pipeline/signal_vault.dart';
+import 'aperture_pane.dart';
 
 class OptInCurtain extends StatefulWidget {
   const OptInCurtain({
     super.key,
-    required this.onDecided,
+    required this.destination,
+    required this.applicationId,
   });
 
-  final VoidCallback onDecided;
+  final String destination;
+  final String applicationId;
 
   @override
   State<OptInCurtain> createState() => _OptInCurtainState();
@@ -44,23 +48,26 @@ class _OptInCurtainState extends State<OptInCurtain> {
     } catch (_) {
       await SignalVault.markPermissionDeniedByOs(true);
     }
-    if (!mounted) return;
-    widget.onDecided();
+    await _goToPortal();
   }
 
   Future<void> _skip() async {
     if (_busy) return;
     setState(() => _busy = true);
     await SignalVault.snoozePermissionBy(kPermissionSnooze);
-    if (!mounted) return;
-    widget.onDecided();
+    await _goToPortal();
   }
 
-  Future<void> _openPrivacy() async {
-    final uri = Uri.parse(PublicLinks.privacyLink);
-    try {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (_) {}
+  Future<void> _goToPortal() async {
+    if (!mounted) return;
+    await Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => AperturePane(
+          destination: widget.destination,
+          applicationId: widget.applicationId,
+        ),
+      ),
+    );
   }
 
   @override
@@ -77,60 +84,25 @@ class _OptInCurtainState extends State<OptInCurtain> {
         fit: StackFit.expand,
         children: <Widget>[
           Image.asset(bg, fit: BoxFit.cover),
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: <Color>[
-                  Color(0x00000000),
-                  Color(0x66000000),
-                  Color(0xCC000000),
-                ],
-                stops: <double>[0, 0.55, 1],
-              ),
-            ),
-          ),
           SafeArea(
-            minimum: const EdgeInsets.fromLTRB(24, 24, 24, 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                const Spacer(),
-                Text(
-                  'Stay in the loop',
-                  textAlign: TextAlign.center,
-                  style: SpireTheme.titleStyle(size: 26),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Allow notifications so you never miss a bonus round, a\n'
-                  'cash-out alert, or a weekend tournament invite.',
-                  textAlign: TextAlign.center,
-                  style: SpireTheme.bodyStyle(),
-                ),
-                const SizedBox(height: 28),
-                SpirePillTap(
-                  label: 'Accept',
-                  onPressed: _busy ? null : _accept,
-                ),
-                const SizedBox(height: 14),
-                Center(
-                  child: SpireTextTap(
+            minimum: const EdgeInsets.fromLTRB(24, 24, 24, 36),
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  SpirePillTap(
+                    label: 'Accept',
+                    onPressed: _busy ? null : _accept,
+                  ),
+                  const SizedBox(height: 14),
+                  SpirePillTap(
                     label: 'Skip',
                     onPressed: _busy ? null : _skip,
-                    trailing: const Icon(Icons.schedule, size: 18),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Center(
-                  child: SpireTextTap(
-                    label: 'Privacy policy',
-                    onPressed: _openPrivacy,
-                    trailing: const Icon(Icons.open_in_new, size: 16),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],

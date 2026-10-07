@@ -51,7 +51,10 @@ class _AperturePaneState extends State<AperturePane> {
   @override
   void initState() {
     super.initState();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.immersiveSticky,
+      overlays: const <SystemUiOverlay>[],
+    );
     SystemChrome.setPreferredOrientations(const <DeviceOrientation>[
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
@@ -182,7 +185,8 @@ class _AperturePaneState extends State<AperturePane> {
     _reachSub?.cancel();
     _reachDebounce?.cancel();
     SystemChrome.setPreferredOrientations(const <DeviceOrientation>[]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    // Keep immersive sticky — user explicitly asked to never show the
+    // Android system navigation bar inside the shell.
     super.dispose();
   }
 

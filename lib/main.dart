@@ -29,13 +29,21 @@ const String kApplicationId = 'com.skyspire.spiregame';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  // Full immersive sticky: hide both the status bar and the Android soft
+  // navigation bar. The user explicitly asked to never surface the system
+  // navigation inside the game. `immersiveSticky` means a swipe from the
+  // edges only briefly re-shows the bars; they auto-hide again.
+  SystemChrome.setEnabledSystemUIMode(
+    SystemUiMode.immersiveSticky,
+    overlays: const <SystemUiOverlay>[],
+  );
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
       systemNavigationBarColor: Colors.transparent,
       systemNavigationBarIconBrightness: Brightness.light,
+      systemNavigationBarContrastEnforced: false,
     ),
   );
 

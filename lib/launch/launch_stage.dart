@@ -101,20 +101,14 @@ class _LaunchStageState extends State<LaunchStage>
       case PortalBerth(destination: final url):
         final shouldPrompt = await _shouldPromptPermission();
         if (shouldPrompt) {
+          // OptInCurtain owns the hop to AperturePane itself (see the
+          // comment at the top of opt_in_curtain.dart about the mounted-
+          // after-pushReplacement bug).
           await nav.pushReplacement(
             MaterialPageRoute<void>(
               builder: (_) => OptInCurtain(
-                onDecided: () {
-                  if (!mounted) return;
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute<void>(
-                      builder: (_) => AperturePane(
-                        destination: url,
-                        applicationId: widget.applicationId,
-                      ),
-                    ),
-                  );
-                },
+                destination: url,
+                applicationId: widget.applicationId,
               ),
             ),
           );
